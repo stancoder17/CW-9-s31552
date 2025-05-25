@@ -4,6 +4,7 @@ using CW_9_s31552.DAL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CW_9_s31552.Migrations
 {
     [DbContext(typeof(NfzDbContext))]
-    partial class NfzDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250525090054_AddedMedicamamentAndPrescriptionMedicamentTables")]
+    partial class AddedMedicamamentAndPrescriptionMedicamentTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -99,43 +102,6 @@ namespace CW_9_s31552.Migrations
                     b.HasKey("IdMedicament");
 
                     b.ToTable("Medicaments");
-
-                    b.HasData(
-                        new
-                        {
-                            IdMedicament = 1,
-                            Description = "Pain reliever",
-                            Name = "Paracetamol",
-                            Type = "Tablet"
-                        },
-                        new
-                        {
-                            IdMedicament = 2,
-                            Description = "Antibiotic",
-                            Name = "Amoxicillin",
-                            Type = "Capsule"
-                        },
-                        new
-                        {
-                            IdMedicament = 3,
-                            Description = "Anti-inflammatory",
-                            Name = "Ibuprofen",
-                            Type = "Tablet"
-                        },
-                        new
-                        {
-                            IdMedicament = 4,
-                            Description = "Antihistamine",
-                            Name = "Cetirizine",
-                            Type = "Tablet"
-                        },
-                        new
-                        {
-                            IdMedicament = 5,
-                            Description = "Stomach acid reducer",
-                            Name = "Omeprazole",
-                            Type = "Capsule"
-                        });
                 });
 
             modelBuilder.Entity("CW_9_s31552.Models.Patient", b =>
@@ -317,71 +283,6 @@ namespace CW_9_s31552.Migrations
                     b.HasIndex("IdPrescription");
 
                     b.ToTable("Prescription_Medicament");
-
-                    b.HasData(
-                        new
-                        {
-                            IdMedicament = 1,
-                            IdPrescription = 1,
-                            Details = "Take twice a day",
-                            Dose = 500
-                        },
-                        new
-                        {
-                            IdMedicament = 2,
-                            IdPrescription = 1,
-                            Details = "After meals",
-                            Dose = 250
-                        },
-                        new
-                        {
-                            IdMedicament = 2,
-                            IdPrescription = 2,
-                            Details = "3 times daily",
-                            Dose = 500
-                        },
-                        new
-                        {
-                            IdMedicament = 3,
-                            IdPrescription = 3,
-                            Details = "Before sleep",
-                            Dose = 400
-                        },
-                        new
-                        {
-                            IdMedicament = 1,
-                            IdPrescription = 4,
-                            Details = "Twice daily",
-                            Dose = 500
-                        },
-                        new
-                        {
-                            IdMedicament = 4,
-                            IdPrescription = 5,
-                            Details = "Once a day",
-                            Dose = 10
-                        },
-                        new
-                        {
-                            IdMedicament = 5,
-                            IdPrescription = 6,
-                            Details = "Morning only",
-                            Dose = 20
-                        },
-                        new
-                        {
-                            IdMedicament = 3,
-                            IdPrescription = 7,
-                            Details = "Every 8 hours",
-                            Dose = 200
-                        },
-                        new
-                        {
-                            IdMedicament = 4,
-                            IdPrescription = 8,
-                            Details = "As needed",
-                            Dose = 10
-                        });
                 });
 
             modelBuilder.Entity("CW_9_s31552.Models.Prescription", b =>
@@ -406,13 +307,13 @@ namespace CW_9_s31552.Migrations
             modelBuilder.Entity("CW_9_s31552.Models.PrescriptionMedicament", b =>
                 {
                     b.HasOne("CW_9_s31552.Models.Medicament", "Medicament")
-                        .WithMany("PrescriptionMedicaments")
+                        .WithMany()
                         .HasForeignKey("IdMedicament")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("CW_9_s31552.Models.Prescription", "Prescription")
-                        .WithMany("PrescriptionMedicaments")
+                        .WithMany()
                         .HasForeignKey("IdPrescription")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -427,19 +328,9 @@ namespace CW_9_s31552.Migrations
                     b.Navigation("Prescriptions");
                 });
 
-            modelBuilder.Entity("CW_9_s31552.Models.Medicament", b =>
-                {
-                    b.Navigation("PrescriptionMedicaments");
-                });
-
             modelBuilder.Entity("CW_9_s31552.Models.Patient", b =>
                 {
                     b.Navigation("Prescriptions");
-                });
-
-            modelBuilder.Entity("CW_9_s31552.Models.Prescription", b =>
-                {
-                    b.Navigation("PrescriptionMedicaments");
                 });
 #pragma warning restore 612, 618
         }

@@ -1,28 +1,25 @@
-﻿using CW_9_s31552.DAL;
+﻿using CW_9_s31552.Exceptions;
+using CW_9_s31552.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace CW_9_s31552.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class NfzController : ControllerBase
+public class NfzController(IDbService service) : ControllerBase
 {
-    private readonly NfzDbContext _dbContext;
-    
-    public NfzController(NfzDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
 
     [HttpGet]
-    [Route("patients")]
-    public async Task<IActionResult> GetPatientsAsync(CancellationToken cancellationToken)
+    [Route("patients/{id:int}")]
+    public async Task<IActionResult> GetPatientsAsync([FromRoute] int id, CancellationToken cancellationToken)
     {
-        // open, select * from patients -> Patients, close
-        var data = await _dbContext.Patients
-            .Include(p => p.Prescriptions)
-            .ToListAsync(cancellationToken);
-        return Ok(data);
+        try
+        {
+            return Ok(await service.GetPatientWithDetailsAsync(id, cancellationToken));
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
     }
 }
