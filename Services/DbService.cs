@@ -44,7 +44,7 @@ public class DbService(NfzDbContext dbContext) : IDbService
         return result;
     }
 
-    public async Task<AddPrescriptionDto> AddPrescriptionAsync(AddPrescriptionDto prescriptionDto, CancellationToken cancellationToken)
+    public async Task<GetPrescriptionDto> AddPrescriptionAsync(AddPrescriptionDto prescriptionDto, CancellationToken cancellationToken)
     {
         // Medicaments list check
         if (!prescriptionDto.Medicaments.Any())
@@ -53,46 +53,27 @@ public class DbService(NfzDbContext dbContext) : IDbService
             throw new BadRequestException("Maximum 10 medicaments can be added to the prescription.");
 
         // Medicaments existence check
-        foreach (var medicamentDto in prescriptionDto.Medicaments)
         {
-            var idMedicament = medicamentDto.IdMedicament;
-            var medicament = dbContext.Medicaments.FirstOrDefaultAsync(m => m.IdMedicament == idMedicament, cancellationToken);
-            if (medicament == null)
-            {
-                throw new BadRequestException($"A medicament with id {idMedicament} not found.");
-            }
+            var ids = prescriptionDto.Medicaments.Select(m => m.IdMedicament).ToList();
+            var existingIds = await dbContext.Medicaments
+                .Where(m => ids.Contains(m.IdMedicament))
+                .Select(m => m.IdMedicament)
+                .ToListAsync(cancellationToken);
+            var missing = ids.Except(existingIds).ToList();
+            if (missing.Count != 0)
+                throw new BadRequestException($"Medicaments with IDs [{string.Join(", ", missing)}] not found.");
         }
-        
+
         // Doctor existence check
-        if (await dbContext.Doctors.FirstOrDefaultAsync(d => d.IdDoctor == prescriptionDto.IdDoctor, cancellationToken) == null)
+        if (!await dbContext.Doctors.AnyAsync(d => d.IdDoctor == prescriptionDto.IdDoctor, cancellationToken))
             throw new BadRequestException($"Doctor with id {prescriptionDto.IdDoctor} not found.");
         
         // Due date check
         if (prescriptionDto.DueDate < prescriptionDto.Date)
             throw new BadRequestException("Incorrect due date.");
 
-        var prescription = new Prescription
-        {
-            Date = prescriptionDto.Date,
-            DueDate = prescriptionDto.DueDate,
-            IdPatient = prescriptionDto.Patient.IdPatient,
-            IdDoctor = prescriptionDto.IdDoctor
-        };
-        await dbContext.Prescriptions.AddAsync(prescription, cancellationToken);
-
-        foreach (var medicamentDto in prescriptionDto.Medicaments)
-        {
-            var prescriptionMedicament = new PrescriptionMedicament
-            {
-                IdMedicament = medicamentDto.IdMedicament,
-                IdPrescription = prescription.IdPrescription,
-                Dose = medicamentDto.Dose,
-                Details = medicamentDto.Description
-            };
-            await dbContext.PrescriptionMedicaments.AddAsync(prescriptionMedicament, cancellationToken);
-        }
-
-        var patient = await dbContext.Patients.Include(patient => patient.Prescriptions).FirstOrDefaultAsync(p => p.IdPatient == prescriptionDto.Patient.IdPatient, cancellationToken)
+        // Database: add Patient if not exists
+        var patient = await dbContext.Patients.FirstOrDefaultAsync(p => p.IdPatient == prescriptionDto.Patient.IdPatient, cancellationToken);
         if (patient == null)
         {
             patient = new Patient
@@ -101,21 +82,55 @@ public class DbService(NfzDbContext dbContext) : IDbService
                 FirstName = prescriptionDto.Patient.FirstName,
                 LastName = prescriptionDto.Patient.LastName,
                 Birthdate = prescriptionDto.Patient.Birthdate,
-                Prescriptions = []
             };
-            patient.Prescriptions.Add(prescription);
             await dbContext.Patients.AddAsync(patient, cancellationToken);
         }
 
+        // Database: add Prescription
+        var prescriptionToAdd = new Prescription
+        {
+            Date = prescriptionDto.Date,
+            DueDate = prescriptionDto.DueDate,
+            IdPatient = prescriptionDto.Patient.IdPatient,
+            IdDoctor = prescriptionDto.IdDoctor,
+        };
+        await dbContext.Prescriptions.AddAsync(prescriptionToAdd, cancellationToken);
+        
+        // Database: add PrescriptionMedicaments
+        // ...and prepare List<GetMedicamentDto> for return
+        List<GetMedicamentDto> medicamentsForReturn = [];
+        foreach (var medicamentDto in prescriptionDto.Medicaments)
+        {
+            var prescriptionMedicamentToAdd = new PrescriptionMedicament
+            {
+                IdMedicament = medicamentDto.IdMedicament,
+                IdPrescription = prescriptionToAdd.IdPrescription,
+                Dose = medicamentDto.Dose,
+                Details = medicamentDto.Description
+            };
+            
+            medicamentsForReturn.Add(new GetMedicamentDto
+            {
+                IdMedicament = medicamentDto.IdMedicament,
+                Name = medicamentDto.Name,
+                Dose = medicamentDto.Dose,
+                Description = medicamentDto.Description,
+            });
+            await dbContext.PrescriptionMedicaments.AddAsync(prescriptionMedicamentToAdd, cancellationToken);
+        }
         await dbContext.SaveChangesAsync(cancellationToken);
 
-        return new GetPatientWithDetailsDto
+        return new GetPrescriptionDto()
         {
-            IdPatient = prescriptionDto.Patient.IdPatient,
-            FirstName = prescriptionDto.Patient.FirstName,
-            LastName = prescriptionDto.Patient.LastName,
-            Birthdate = prescriptionDto.Patient.Birthdate,
-            Prescriptions = patient.Prescriptions
-        }
+            IdPrescription = prescriptionToAdd.IdPrescription,
+            Date = prescriptionToAdd.Date,
+            DueDate = prescriptionToAdd.DueDate,
+            Medicaments = medicamentsForReturn,
+            Doctor = new GetDoctorDto
+            {
+                IdDoctor = prescriptionDto.IdDoctor,
+                FirstName = dbContext.Doctors.FirstOrDefault(d => d.IdDoctor == prescriptionDto.IdDoctor)!.FirstName,
+            }
+        };
     }
 }
