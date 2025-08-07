@@ -28,14 +28,10 @@ Returns full information about a selected patient, including:
 - all related prescriptions
 - all prescribed medicaments
 - information about doctors
-Prescriptions are sorted by DueDate.
+Prescriptions are sorted by 'DueDate'.
 
 The code is separated into different **layers**:
 1. Due to the small size of the project, **data access** and **business logic** are handled in the same layer.
 2. **Controller** layer: handles HTTP requests and responses
 
 # CW-9-s31552
-
-basic validation and defensive programming
-
-clean, testable structure (SOLID, DRY, KISS)
