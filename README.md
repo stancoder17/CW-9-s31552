@@ -13,7 +13,7 @@ It was built as a **backend-only** project — there is no frontend or user inte
 Adds a new **prescription** for a patient. The request body must include:
 - patient data
 - a list of prescribed medicaments (up to 10)
-- prescriptions' due date
+- prescription's due date
 
 **Validation:**
 
