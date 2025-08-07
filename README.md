@@ -13,14 +13,14 @@ It was built as a **backend-only** project — there is no frontend or user inte
 Adds a new **prescription** for a patient. The request body must include:
 - patient data
 - a list of prescribed medicaments (up to 10)
-- prescription dates (`Date`, `DueDate`)
+- prescriptions' due date
 
 **Validation:**
 
 - If the patient does not exist, a new patient is added
 - If any medicament does not exist in the database, an error is returned
 - A prescription cannot include more than 10 medicaments
-- `DueDate` must be the same or later than `Date`
+- `DueDate` must not be in the past
 
 ### Getting patient details
 Returns full information about a selected patient, including:
